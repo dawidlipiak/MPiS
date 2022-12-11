@@ -5,13 +5,23 @@
 #include <time.h>
 #include <math.h>
 #include <vector>
+#include <fstream>
+#include <string>
 
 using namespace std;
 
-void ballsAndBins (int n, int k, mt19937 mt) {
+//proper random generator marsene twister
+std::mt19937 mt{ static_cast<unsigned int>(
+    std::chrono::steady_clock::now().time_since_epoch().count()
+    ) };
+
+
+void ballsAndBins (int n, int k, fstream results[]) {
+
     // Vector with numbers of balls in a pocket 
     vector<unsigned short>pockets(n,0);
-    // Radnom number from range 0-n-1
+    
+    // Radnom number from range 0-(n-1)
     uniform_int_distribution dieN{0,n-1};
     
     // Counter of throws into pockets
@@ -34,7 +44,7 @@ void ballsAndBins (int n, int k, mt19937 mt) {
     int countOnes = 0;
     // Moment when all pockets have at least one ball in it
     int allOnes;
-
+    
     while(countDoubles != n){
         index = dieN(mt);
         pockets[index]++;
@@ -69,32 +79,55 @@ void ballsAndBins (int n, int k, mt19937 mt) {
             allOnes = counter;
             state2 = true;
         }
-
-    //printf("index %d rzut %d\n", index, counter);
     }
-    // printf("n = %d, k = %d", n,k);
-    // printf("collision: %d\nempty: %d\nmax : %d\none ball: %d\n", firstCollision, emptyPockets,max,allOnes);
-    // printf("two balls: %d\nDn - Cn: %d\n",counter,counter-allOnes);
+    pockets.clear();
+    results[0] << to_string(firstCollision) + ",";
+    results[1] << to_string(emptyPockets)+",";
+    results[2] << to_string(max)+",";
+    results[3] << to_string(allOnes)+",";
+    results[4] << to_string(counter)+",";
+    results[5] << to_string(counter - allOnes)+",";
+    
 }
 
 int main(int argc, char **argv)
 {   
-    //proper random generator marsene twister
-    srand (static_cast <unsigned> (time(NULL)));
-    mt19937 mt { 
-        static_cast<unsigned int>(chrono::steady_clock::now().time_since_epoch().count()) 
-    };
+    // File pointer
+    fstream results[6];
+
+    // opens an existing csv file or creates a new file.
+    results[0].open("Bn_results.csv", ios::out);
+    results[1].open("Un_results.csv", ios::out);
+    results[2].open("Ln_results.csv", ios::out);
+    results[3].open("Cn_results.csv", ios::out);
+    results[4].open("Dn_results.csv", ios::out);
+    results[5].open("Dn-Cn_results.csv", ios::out);
 
     //number of pockets
     int n = 1000;
     // Number of repeats
     int k;
 
-    for(; n <= 100000; n += 1000){
+    for(; n <= 100000; n += 1000)
+    {
+        for (int i = 0; i < 6; i++){
+                results[i] << to_string(n) + ",";
+        }
+        
         for (k = 0; k < 50; k++)
         {
-            ballsAndBins(n, k, mt);
+            ballsAndBins(n, k, results);
         }
+
+        for (int i = 0; i < 6; i++){
+            results[i] << "\n";
+        }
+    }
+
+
+    for (int i = 0; i < 6; i++)
+    {
+            results[i].close();
     }
 
     return 0;
